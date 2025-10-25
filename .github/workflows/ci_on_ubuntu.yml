@@ -6,10 +6,6 @@ on:
 
 jobs:
   check_kaldi_symlinks:
-    if: 'github.event.pull_request.draft == false
-
-      '
-    needs: process_labels
     runs-on: ubuntu-latest
     steps:
       - name: Start Energy Measurement
@@ -54,7 +50,8 @@ jobs:
         uses: joerick/pr-labels-action@v1.0.9
       - id: step1
         name: Check whether PR is related to only docker
-        run: "if [ -z \"$GITHUB_PR_LABEL_ESPNET1\" ] && [ -z \"$GITHUB_PR_LABEL_ESPNET2\"\
+        run:
+          "if [ -z \"$GITHUB_PR_LABEL_ESPNET1\" ] && [ -z \"$GITHUB_PR_LABEL_ESPNET2\"\
           \ ] && [ -n \"$GITHUB_PR_LABEL_DOCKER\" ]; then\n  echo \"is_docker=true\"\
           \ >> \"$GITHUB_OUTPUT\"\nelse\n  echo \"is_docker=false\" >> \"$GITHUB_OUTPUT\"\
           \nfi\n"
@@ -79,10 +76,6 @@ jobs:
           name: total-energy-consumption
           path: total_energy_consumption.json
   test_configuration_espnet2:
-    if: 'github.event.pull_request.draft == false
-
-      '
-    needs: process_labels
     runs-on: ${{ matrix.os }}
     steps:
       - name: Start Energy Measurement
@@ -93,7 +86,8 @@ jobs:
       - uses: actions/checkout@master
       - uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
+          key:
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
             }}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
           path: ~/.cache/pip
       - uses: actions/setup-python@v4
@@ -101,13 +95,13 @@ jobs:
           architecture: x64
           python-version: ${{ matrix.python-version }}
       - name: install dependencies
-        run: 'sudo apt-get update -qq
+        run: "sudo apt-get update -qq
 
-          # NOTE(kamo): g++-7 doesn''t exist in ubuntu-latest
+          # NOTE(kamo): g++-7 doesn't exist in ubuntu-latest
 
           sudo apt-get install -qq -y cmake libsndfile1-dev bc sox ffmpeg
 
-          '
+          "
       - id: measurement-5
         name: Record Measurement After install dependencies
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -121,9 +115,9 @@ jobs:
           TH_VERSION: ${{ matrix.pytorch-version }}
           USE_CONDA: ${{ matrix.use-conda }}
         name: install espnet
-        run: './ci/install.sh
+        run: "./ci/install.sh
 
-          '
+          "
       - id: measurement-7
         name: Record Measurement After install espnet
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -163,23 +157,19 @@ jobs:
         include:
           - chainer-verssion: 6.0.0
             os: ubuntu-latest
-            python-version: '3.11'
+            python-version: "3.11"
             pytorch-version: 2.4.0
             use-conda: false
         os:
           - ubuntu-latest
         python-version:
-          - '3.10'
+          - "3.10"
         pytorch-version:
           - 1.13.1
         use-conda:
           - false
       max-parallel: 20
   test_import:
-    if: 'github.event.pull_request.draft == false
-
-      '
-    needs: process_labels
     runs-on: ${{ matrix.os }}
     steps:
       - name: Start Energy Measurement
@@ -193,11 +183,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: 'sudo apt-get install -qq -y libsndfile1-dev
+        run: "sudo apt-get install -qq -y libsndfile1-dev
 
           python3 -m pip install --upgrade pip setuptools wheel
 
-          '
+          "
       - id: measurement-4
         name: Record Measurement After Install dependencies
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -208,7 +198,7 @@ jobs:
       - env:
           TH_VERSION: ${{ matrix.pytorch-version }}
         name: Install espnet with the least requirement
-        run: 'python3 -m pip install -U numba
+        run: "python3 -m pip install -U numba
 
           ./tools/installers/install_torch.sh false ${TH_VERSION} CPU
 
@@ -222,7 +212,7 @@ jobs:
 
           python3 -m pip freeze
 
-          '
+          "
       - id: measurement-6
         name: Record Measurement After Install espnet with the least requirement
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -231,9 +221,9 @@ jobs:
           label: Install espnet with the least requirement
           task: get-measurement
       - name: Import all modules (Try1)
-        run: 'python3 ./ci/test_import_all.py
+        run: "python3 ./ci/test_import_all.py
 
-          '
+          "
       - id: measurement-8
         name: Record Measurement After Import all modules (Try1)
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -259,9 +249,9 @@ jobs:
           label: Install espnet with the full requirement
           task: get-measurement
       - name: Import all modules (Try2)
-        run: 'python3 -q -X faulthandler ./ci/test_import_all.py
+        run: "python3 -q -X faulthandler ./ci/test_import_all.py
 
-          '
+          "
       - id: measurement-12
         name: Record Measurement After Import all modules (Try2)
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -287,15 +277,11 @@ jobs:
         os:
           - ubuntu-latest
         python-version:
-          - '3.10'
+          - "3.10"
         pytorch-version:
           - 2.4.0
       max-parallel: 20
   unit_test_espnet1_and_integration_test_espnet1:
-    if: 'github.event.pull_request.draft == false
-
-      '
-    needs: process_labels
     runs-on: ${{ matrix.os }}
     steps:
       - name: Start Energy Measurement
@@ -306,21 +292,20 @@ jobs:
       - uses: actions/checkout@master
       - uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
-            }}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version}}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
           path: ~/.cache/pip
       - uses: actions/setup-python@v4
         with:
           architecture: x64
           python-version: ${{ matrix.python-version }}
       - name: install dependencies
-        run: 'sudo apt-get update -qq
+        run: "sudo apt-get update -qq
 
-          # NOTE(kamo): g++-7 doesn''t exist in ubuntu-latest
+          # NOTE(kamo): g++-7 doesn't exist in ubuntu-latest
 
           sudo apt-get install -qq -y cmake libsndfile1-dev bc sox ffmpeg
 
-          '
+          "
       - id: measurement-5
         name: Record Measurement After install dependencies
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -334,9 +319,9 @@ jobs:
           TH_VERSION: ${{ matrix.pytorch-version }}
           USE_CONDA: ${{ matrix.use-conda }}
         name: install espnet
-        run: './ci/install.sh
+        run: "./ci/install.sh
 
-          '
+          "
       - id: measurement-7
         name: Record Measurement After install espnet
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -345,9 +330,9 @@ jobs:
           label: install espnet
           task: get-measurement
       - name: test shell
-        run: './ci/test_shell_espnet1.sh
+        run: "./ci/test_shell_espnet1.sh
 
-          '
+          "
       - id: measurement-9
         name: Record Measurement After test shell
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -369,11 +354,11 @@ jobs:
           flags: test_python_espnet1
       - continue-on-error: true
         name: coverage erase
-        run: 'source tools/activate_python.sh
+        run: "source tools/activate_python.sh
 
           coverage erase
 
-          '
+          "
       - id: measurement-14
         name: Record Measurement After coverage erase
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -382,9 +367,9 @@ jobs:
           label: coverage erase
           task: get-measurement
       - name: install kaldi
-        run: './ci/install_kaldi.sh
+        run: "./ci/install_kaldi.sh
 
-          '
+          "
       - id: measurement-16
         name: Record Measurement After install kaldi
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -424,23 +409,19 @@ jobs:
         include:
           - chainer-verssion: 6.0.0
             os: ubuntu-latest
-            python-version: '3.10'
+            python-version: "3.10"
             pytorch-version: 1.13.1
             use-conda: false
         os:
           - ubuntu-latest
         python-version:
-          - '3.10'
+          - "3.10"
         pytorch-version:
           - 2.1.2
         use-conda:
           - false
       max-parallel: 20
   unit_test_espnet2_and_integration_test_espnet2:
-    if: 'github.event.pull_request.draft == false
-
-      '
-    needs: process_labels
     runs-on: ${{ matrix.os }}
     steps:
       - name: Start Energy Measurement
@@ -451,7 +432,8 @@ jobs:
       - uses: actions/checkout@master
       - uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
+          key:
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
             }}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
           path: ~/.cache/pip
       - uses: actions/setup-python@v4
@@ -459,13 +441,13 @@ jobs:
           architecture: x64
           python-version: ${{ matrix.python-version }}
       - name: install dependencies
-        run: 'sudo apt-get update -qq
+        run: "sudo apt-get update -qq
 
-          # NOTE(kamo): g++-7 doesn''t exist in ubuntu-latest
+          # NOTE(kamo): g++-7 doesn't exist in ubuntu-latest
 
           sudo apt-get install -qq -y cmake libsndfile1-dev bc sox ffmpeg
 
-          '
+          "
       - id: measurement-5
         name: Record Measurement After install dependencies
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -482,9 +464,9 @@ jobs:
           TH_VERSION: ${{ matrix.pytorch-version }}
           USE_CONDA: ${{ matrix.use-conda }}
         name: install espnet
-        run: './ci/install.sh
+        run: "./ci/install.sh
 
-          '
+          "
       - id: measurement-8
         name: Record Measurement After install espnet
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -493,9 +475,9 @@ jobs:
           label: install espnet
           task: get-measurement
       - name: test shell
-        run: './ci/test_shell_espnet2.sh
+        run: "./ci/test_shell_espnet2.sh
 
-          '
+          "
       - id: measurement-10
         name: Record Measurement After test shell
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -517,11 +499,11 @@ jobs:
           flags: test_python_espnet2
       - continue-on-error: true
         name: coverage erase
-        run: 'source tools/activate_python.sh
+        run: "source tools/activate_python.sh
 
           coverage erase
 
-          '
+          "
       - id: measurement-15
         name: Record Measurement After coverage erase
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -530,9 +512,9 @@ jobs:
           label: coverage erase
           task: get-measurement
       - name: install kaldi
-        run: './ci/install_kaldi.sh
+        run: "./ci/install_kaldi.sh
 
-          '
+          "
       - id: measurement-17
         name: Record Measurement After install kaldi
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -554,11 +536,11 @@ jobs:
           flags: test_utils
       - continue-on-error: true
         name: coverage erase
-        run: 'source tools/activate_python.sh
+        run: "source tools/activate_python.sh
 
           coverage erase
 
-          '
+          "
       - id: measurement-22
         name: Record Measurement After coverage erase
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -598,14 +580,14 @@ jobs:
         include:
           - chainer-verssion: 6.0.0
             os: ubuntu-latest
-            python-version: '3.10'
+            python-version: "3.10"
             pytorch-version: 1.13.1
             use-conda: false
         os:
           - ubuntu-latest
         python-version:
-          - '3.10'
-          - '3.11'
+          - "3.10"
+          - "3.11"
         pytorch-version:
           - 2.0.1
           - 2.1.2
@@ -616,10 +598,6 @@ jobs:
           - false
       max-parallel: 20
   unit_test_espnetez_and_integration_test_espnetez:
-    if: 'github.event.pull_request.draft == false
-
-      '
-    needs: process_labels
     runs-on: ${{ matrix.os }}
     steps:
       - name: Start Energy Measurement
@@ -630,7 +608,8 @@ jobs:
       - uses: actions/checkout@master
       - uses: actions/cache@v3
         with:
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
+          key:
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
             }}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
           path: ~/.cache/pip
       - uses: actions/setup-python@v4
@@ -638,13 +617,13 @@ jobs:
           architecture: x64
           python-version: ${{ matrix.python-version }}
       - name: install dependencies
-        run: 'sudo apt-get update -qq
+        run: "sudo apt-get update -qq
 
-          # NOTE(kamo): g++-7 doesn''t exist in ubuntu-latest
+          # NOTE(kamo): g++-7 doesn't exist in ubuntu-latest
 
           sudo apt-get install -qq -y cmake libsndfile1-dev bc sox ffmpeg
 
-          '
+          "
       - id: measurement-5
         name: Record Measurement After install dependencies
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -661,9 +640,9 @@ jobs:
           TH_VERSION: ${{ matrix.pytorch-version }}
           USE_CONDA: ${{ matrix.use-conda }}
         name: install espnet
-        run: './ci/install.sh
+        run: "./ci/install.sh
 
-          '
+          "
       - id: measurement-8
         name: Record Measurement After install espnet
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -685,11 +664,11 @@ jobs:
           flags: test_python_espnetez
       - continue-on-error: true
         name: coverage erase
-        run: 'source tools/activate_python.sh
+        run: "source tools/activate_python.sh
 
           coverage erase
 
-          '
+          "
       - id: measurement-13
         name: Record Measurement After coverage erase
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -698,9 +677,9 @@ jobs:
           label: coverage erase
           task: get-measurement
       - name: install kaldi
-        run: './ci/install_kaldi.sh
+        run: "./ci/install_kaldi.sh
 
-          '
+          "
       - id: measurement-15
         name: Record Measurement After install kaldi
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -722,11 +701,11 @@ jobs:
           flags: test_utils
       - continue-on-error: true
         name: coverage erase
-        run: 'source tools/activate_python.sh
+        run: "source tools/activate_python.sh
 
           coverage erase
 
-          '
+          "
       - id: measurement-20
         name: Record Measurement After coverage erase
         uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
@@ -766,14 +745,14 @@ jobs:
         include:
           - chainer-verssion: 6.0.0
             os: ubuntu-latest
-            python-version: '3.10'
+            python-version: "3.10"
             pytorch-version: 1.13.1
             use-conda: false
         os:
           - ubuntu-latest
         python-version:
-          - '3.10'
-          - '3.11'
+          - "3.10"
+          - "3.11"
         pytorch-version:
           - 2.0.1
           - 2.1.2
