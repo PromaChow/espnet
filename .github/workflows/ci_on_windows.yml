@@ -1,45 +1,79 @@
 name: ci on windows
-
 on:
   push:
     branches:
-      - master
-  pull_request:
-    branches:
-      - master
+      - mai
 
 jobs:
   check_installable_on_windows:
-    runs-on: Windows-latest
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        python-version: ["3.10"]
-        pytorch-version: [2.4.0]
     defaults:
       run:
         shell: bash
+    if: github.event.pull_request.draft == false
+    runs-on: Windows-latest
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: start-measurement
       - uses: actions/checkout@master
       - uses: actions/cache@v3
         with:
+          key:
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
+            }}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version }}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
       - uses: actions/setup-python@v4
         with:
+          architecture: x64
           python-version: ${{ matrix.python-version }}
-          architecture: 'x64'
       - name: install dependencies
-        run: |
-          choco install -y wget
-      - name: Get PR labels
-        id: pr-labels
+        run: "choco install -y wget
+
+          "
+      - id: measurement-5
+        name: Record Measurement After install dependencies
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          label: install dependencies
+          task: get-measurement
+      - id: pr-labels
+        name: Get PR labels
         uses: joerick/pr-labels-action@v1.0.9
-      - name: install espnet
-        env:
+      - env:
+          CHAINER_VERSION: 6.0.0
           ESPNET_PYTHON_VERSION: ${{ matrix.python-version }}
           TH_VERSION: ${{ matrix.pytorch-version }}
-          CHAINER_VERSION: 6.0.0
           USE_CONDA: false
-        run: |
-          ./ci/install.sh
+        name: install espnet
+        run: "./ci/install.sh
+
+          "
+      - id: measurement-8
+        name: Record Measurement After install espnet
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          label: install espnet
+          task: get-measurement
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption.json
+    strategy:
+      matrix:
+        python-version:
+          - "3.10"
+        pytorch-version:
+          - 2.4.0

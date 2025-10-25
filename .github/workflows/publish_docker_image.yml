@@ -1,48 +1,63 @@
 name: publich docker image
-
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
-      - master
-    paths:
-      - 'tools/**'
-      - setup.py
+      - mai
 
 jobs:
   docker:
-    runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: start-measurement
       - uses: actions/checkout@v2
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
       - name: Build and push CPU container
-        run: |
-          cd docker
-          docker build --build-arg FROM_TAG=runtime-latest \
-            -f prebuilt/devel.dockerfile \
-            --target devel \
-            -t espnet/espnet:cpu-latest .
-          docker push espnet/espnet:cpu-latest
-
+        run:
+          "cd docker\ndocker build --build-arg FROM_TAG=runtime-latest \\\n  -f\
+          \ prebuilt/devel.dockerfile \\\n  --target devel \\\n  -t espnet/espnet:cpu-latest\
+          \ .\ndocker push espnet/espnet:cpu-latest\n"
+      - id: measurement-6
+        name: Record Measurement After Build and push CPU container
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          label: Build and push CPU container
+          task: get-measurement
       - name: Build and push GPU container
-        run: |
-          cd docker
-          docker build --build-arg FROM_TAG=cuda-latest \
-            --build-arg CUDA_VER=11.1 \
-            -f prebuilt/devel.dockerfile \
-            --target devel \
-            -t espnet/espnet:gpu-latest .
-          docker push espnet/espnet:gpu-latest
+        run:
+          "cd docker\ndocker build --build-arg FROM_TAG=cuda-latest \\\n  --build-arg\
+          \ CUDA_VER=11.1 \\\n  -f prebuilt/devel.dockerfile \\\n  --target devel\
+          \ \\\n  -t espnet/espnet:gpu-latest .\ndocker push espnet/espnet:gpu-latest\n"
+      - id: measurement-8
+        name: Record Measurement After Build and push GPU container
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          label: Build and push GPU container
+          task: get-measurement
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption.json

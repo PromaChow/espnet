@@ -1,45 +1,68 @@
 name: ci on macos
-
 on:
   push:
     branches:
-      - master
-  pull_request:
-    branches:
-      - master
+      - mai
 
 jobs:
   check_installable_on_macos:
-    runs-on: macOS-latest
     if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        python-version: ["3.10"]
-        pytorch-version: [2.1.2]
-        use-conda: [true, false]
+    runs-on: macOS-latest
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: start-measurement
       - uses: actions/checkout@master
       - uses: actions/cache@v3
         with:
+          key:
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version
+            }}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.pytorch-version }}-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/Makefile') }}
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Get PR labels
-        id: pr-labels
+      - id: pr-labels
+        name: Get PR labels
         uses: joerick/pr-labels-action@v1.0.9
-      - name: install espnet
-        env:
+      - env:
+          CHAINER_VERSION: 6.0.0
           ESPNET_PYTHON_VERSION: ${{ matrix.python-version }}
           TH_VERSION: ${{ matrix.pytorch-version }}
-          CHAINER_VERSION: 6.0.0
           USE_CONDA: ${{ matrix.use-conda }}
-          # FIXME(kamo): clang is used by default, but I don't know how to use "-fopenmp" with clang
-          WITH_OMP: OFF
-          # NOTE(kamo): If it's hard to build with clang, please consider using gcc
-          # However, I couldn't build pysptk with gcc on MacOS
-          # CC: /usr/local/bin/gcc-11
-          # CXX: /usr/local/bin/g++-11
-        run: |
-          ./ci/install_macos.sh
+          WITH_OMP: false
+        name: install espnet
+        run: "./ci/install_macos.sh
+
+          "
+      - id: measurement-6
+        name: Record Measurement After install espnet
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          label: install espnet
+          task: get-measurement
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@862050e4f01f65b1436e5eca18ba4bd85562f0de
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption.json
+    strategy:
+      matrix:
+        python-version:
+          - "3.10"
+        pytorch-version:
+          - 2.1.2
+        use-conda:
+          - true
+          - false
